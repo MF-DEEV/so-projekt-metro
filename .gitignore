@@ -1,0 +1,15 @@
+# Pliki wynikowe kompilacji
+*.o
+*.d
+bin/
+build/
+
+# Logi z przebiegu symulacji
+logs/
+*.log
+
+# Pliki edytorów i systemu
+.vscode/
+.idea/
+*.swp
+.DS_Store
