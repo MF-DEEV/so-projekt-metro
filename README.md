@@ -21,6 +21,7 @@ Pełny opis zadania, przyjęte doprecyzowania i opis testów:
 ```sh
 make            # kompilacja wszystkich programów do katalogu bin/
 make run        # uruchomienie symulacji z domyślnymi parametrami
+make test       # uruchomienie testów z katalogu tests/
 make ipc-clean  # usunięcie struktur IPC pozostałych po przerwanej symulacji
 make clean      # usunięcie plików wynikowych
 ```
@@ -43,7 +44,8 @@ Uruchomienie z własnymi parametrami:
 | `-M` | łączna liczba pasażerów przychodzących na stację | 300 |
 | `-s` | ziarno generatora liczb losowych (powtarzalne przebiegi) | czas systemowy |
 
-Wszystkie wartości są sprawdzane przed startem. Program sprawdza też, czy łączna liczba
+Gdy `-R` nie zostanie podane, a `P < 4`, liczba miejsc na rowery jest równa `P`.
+`./bin/metro -h` wypisuje pomoc. Wszystkie wartości są sprawdzane przed startem. Program sprawdza też, czy łączna liczba
 procesów zmieści się w limicie użytkownika (`ulimit -u`; na torusie wynosi on 100).
 
 ### Sterowanie w trakcie symulacji

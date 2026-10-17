@@ -53,13 +53,16 @@ symulacji (logi) zapisać w pliku (plikach) tekstowym.
 3. **Sygnał 1** to `SIGUSR1`, **sygnał 2** to `SIGUSR2`, oba wysyłane do procesu zawiadowcy
    (np. `kill -USR1 <pid>`). Zawiadowca przekazuje polecenie maszyniście pociągu stojącego na
    stacji albo zamyka dworzec.
-4. **Kierunek.** Pociągi wyjeżdżają naprzemiennie w kierunku A i B. Każdy pociąg po powrocie
-   zmienia kierunek. Zawiadowca ogłasza kierunek tuż przed wjazdem pociągu na peron, a na
-   peron wchodzą tylko pasażerowie z biletem na ten kierunek; pozostali czekają na dworcu.
+4. **Kierunek.** Na początku pociągom przydzielane są kierunki naprzemiennie (pociąg 1 – A,
+   pociąg 2 – B, …). Każdy pociąg po powrocie na stację zmienia kierunek na przeciwny.
+   Pociągi wjeżdżają na peron w kolejności powrotu. Zawiadowca ogłasza kierunek tuż przed
+   wjazdem pociągu na peron, a do wejść podchodzą tylko pasażerowie z biletem na ten kierunek;
+   pozostali czekają na dworcu.
 5. **Wejścia.** Pasażer z rowerem korzysta wyłącznie z wejścia 3. Pasażer z bagażem
    podręcznym wybiera krótszą z kolejek do wejść 1 i 2. W wejściu może przebywać jedna osoba.
-6. **VIP** (ok. 0,5% pasażerów na każdy kierunek) ma bilet wcześniej, więc pomija kasę,
-   a maszynista obsługuje go przed oczekującymi pasażerami.
+6. **VIP** (ok. 0,5% pasażerów na każdy kierunek) ma bilet kupiony wcześniej, więc nie płaci
+   i nie stoi w kolejce do kasy, ale kasa rejestruje go przy wejściu na dworzec (jak każdą
+   wchodzącą osobę). Maszynista obsługuje VIP-a przed oczekującymi pasażerami.
 7. **Dziecko poniżej 8 lat** jest wątkiem w procesie opiekuna. Dorosły kupuje bilet także dla
    dziecka. Dziecko i opiekun wchodzą tym samym wejściem i wsiadają razem albo wcale (gdy
    w pociągu zostało tylko jedno wolne miejsce, oboje czekają na kolejny pociąg).
@@ -68,9 +71,12 @@ symulacji (logi) zapisać w pliku (plikach) tekstowym.
 9. **Limit procesów.** Generator pilnuje, by jednocześnie istniało tylko tylu pasażerów, ilu
    mieści się w limicie procesów użytkownika (na torusie 100). Gdy limit jest osiągnięty,
    generator czeka w `wait()` na zakończenie któregoś pasażera.
-10. **Koniec symulacji.** Pociągi kończą pracę, gdy wszyscy pasażerowie, którzy weszli na
-    dworzec, zostali przewiezieni, a generator nie tworzy już nowych. `SIGINT`/`SIGTERM`
-    (np. `Ctrl+C`) powoduje łagodne zakończenie wszystkich procesów i usunięcie IPC.
+10. **Koniec symulacji.** Bez sygnału 2 pociągi kończą pracę, gdy generator utworzył już
+    wszystkich pasażerów, a każdy z nich został przewieziony. Po sygnale 2 nikt nie wsiada,
+    więc pasażerowie czekający na dworcu i w kolejkach opuszczają stację (zapis w logu),
+    a pociągi kończą pracę po rozwiezieniu osób, które były już w pociągach.
+    `SIGINT`/`SIGTERM` (np. `Ctrl+C`) powoduje łagodne zakończenie wszystkich procesów
+    i usunięcie IPC.
 11. **Logi.** Każdy proces dopisuje zdarzenia do pliku `logs/symulacja.log` (czas, rola, PID,
     zdarzenie). Kasa dodatkowo zapisuje rejestr wchodzących osób w `logs/kasa.log`.
 
@@ -85,7 +91,9 @@ symulacji (logi) zapisać w pliku (plikach) tekstowym.
 | Ti A, Ti B | zakres czasu kursu dla kierunku A i B (s) | 1–3600, min ≤ max |
 | K | liczba stanowisk kasowych | 1–10 |
 | M | łączna liczba pasażerów | 1–100000 |
+| s | ziarno generatora liczb losowych | 0–2147483647 |
 
+Gdy R nie zostanie podane, a P < 4, liczba miejsc na rowery jest równa P.
 Niepoprawne wartości powodują wyświetlenie komunikatu i zakończenie programu przed utworzeniem
 jakichkolwiek procesów i struktur IPC.
 
@@ -117,8 +125,9 @@ stanu systemu po zakończeniu (`ps`, `ipcs`).
 - **Parametry:** M = 2000, sygnał wysłany w trakcie symulacji.
 - **Przebieg:** wysłanie `SIGUSR2` do zawiadowcy, odczekanie do końca symulacji.
 - **Oczekiwany wynik:** po sygnale nikt nie wchodzi na dworzec ani do pociągu, pasażerowie
-  obecni wcześniej w pociągach są dowiezieni, wszystkie procesy kończą się, `ipcs` nie pokazuje
-  struktur użytkownika, `ps` nie pokazuje procesów zombie.
+  czekający na dworcu opuszczają stację, pasażerowie obecni wcześniej w pociągach są dowiezieni,
+  wszystkie procesy kończą się, `ipcs` nie pokazuje struktur użytkownika, `ps` nie pokazuje
+  procesów zombie.
 
 ### Test 4 – Dziecko pod opieką dorosłego
 
@@ -138,9 +147,9 @@ stanu systemu po zakończeniu (`ps`, `ipcs`).
 
 ### Test 6 – Obciążenie i limit procesów
 
-- **Cel:** sprawdzenie, czy symulacja nie przekracza limitu procesów użytkownika.
-- **Parametry:** M = 20000; osobno próba uruchomienia z N i K przekraczającymi limit.
+- **Cel:** sprawdzenie, czy generator przy dużym napływie pasażerów nie przekracza limitu
+  procesów użytkownika i poprawnie odbiera zakończone procesy.
+- **Parametry:** M = 20000, N = 10, K = 10 (najmniej miejsca dla pasażerów).
 - **Przebieg:** uruchomienie symulacji, okresowe sprawdzanie liczby procesów użytkownika.
 - **Oczekiwany wynik:** `fork()` nigdy nie kończy się błędem `EAGAIN`, liczba procesów nie
-  przekracza limitu, symulacja kończy się poprawnie, a konfiguracja przekraczająca limit jest
-  odrzucana z komunikatem przed startem.
+  przekracza limitu, nie powstają procesy zombie, wszyscy pasażerowie zostają przewiezieni.
