@@ -23,10 +23,13 @@ typedef struct {
     int passenger_slots; /* ilu pasażerów może istnieć jednocześnie (limit procesów) */
 } params_t;
 
+/* Wynik params_parse(), gdy użytkownik poprosił o pomoc (-h) */
+#define PARAMS_HELP 1
+
 /*
  * Odczytuje parametry z linii poleceń i sprawdza ich poprawność oraz limit
- * procesów użytkownika. Zwraca 0 przy sukcesie, -1 gdy dane są niepoprawne
- * (komunikat jest już wypisany).
+ * procesów użytkownika. Zwraca 0 przy sukcesie, PARAMS_HELP po wypisaniu
+ * pomocy, -1 gdy dane są niepoprawne (komunikat jest już wypisany).
  */
 int params_parse(int argc, char *argv[], params_t *out);
 

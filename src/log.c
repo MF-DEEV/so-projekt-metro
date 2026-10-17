@@ -10,6 +10,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
@@ -42,7 +43,7 @@ void log_init(const char *path, const char *role, log_color_t color)
     if (mkdir(LOG_DIR, 0700) == -1 && errno != EEXIST)
         error_report(ERR_FATAL, "mkdir " LOG_DIR);
 
-    log_fd = (int)CHECK(open(path, O_WRONLY | O_CREAT | O_APPEND, PERM_OWNER), "open log");
+    log_fd = (int)CHECK(open(path, O_WRONLY | O_CREAT | O_APPEND | O_CLOEXEC, PERM_OWNER), "open log");
 }
 
 /* Bieżący czas w formacie HH:MM:SS.mmm */
@@ -61,6 +62,30 @@ static void format_time(char *buf, size_t size)
              (int)(ts.tv_nsec / 1000000L) % 1000);
 }
 
+/*
+ * Po ucięciu zbyt długiej wiadomości usuwa niepełny znak UTF-8 z końca
+ * (np. połowę "ą") i oznacza ucięcie wielokropkiem.
+ */
+static void trim_utf8(char *text)
+{
+    size_t len = strlen(text);
+    size_t start;
+
+    /* miejsce na "..." i znak końca */
+    if (len > LOG_LINE_MAX - 4) len = LOG_LINE_MAX - 4;
+
+    /* początek ostatniego znaku: cofamy się po bajtach kontynuacji 10xxxxxx */
+    start = len;
+    while (start > 0 && ((unsigned char)text[start - 1] & 0xC0) == 0x80) start--;
+    if (start > 0 && ((unsigned char)text[start - 1] & 0x80) != 0) {
+        unsigned char lead = (unsigned char)text[start - 1];
+        size_t need = (lead & 0xE0) == 0xC0 ? 2 : (lead & 0xF0) == 0xE0 ? 3 : 4;
+
+        if (len - (start - 1) < need) len = start - 1;   /* znak niepełny - usuwamy go */
+    }
+    memcpy(text + len, "...", 4);
+}
+
 void log_msg(const char *fmt, ...)
 {
     char now[32];
@@ -71,8 +96,9 @@ void log_msg(const char *fmt, ...)
 
     format_time(now, sizeof(now));
     va_start(ap, fmt);
-    vsnprintf(text, sizeof(text), fmt, ap);
+    len = vsnprintf(text, sizeof(text), fmt, ap);
     va_end(ap);
+    if (len >= (int)sizeof(text)) trim_utf8(text);
 
     len = snprintf(line, sizeof(line), "[%s] [%-10s %6d] %s\n", now, log_role, (int)getpid(), text);
     if (len < 0) return;

@@ -37,11 +37,15 @@ $(BIN_DIR) $(OBJ_DIR):
 run: all
 	./$(BIN_DIR)/metro
 
-# Usuwa struktury IPC bieżącego użytkownika, które zostały po przerwanej symulacji
+# Usuwa struktury IPC bieżącego użytkownika, które zostały po przerwanej symulacji.
+# Filtrujemy po numerycznym UID z /proc/sysvipc (ipcs ucina długie nazwy użytkowników).
+UID_NUM := $(shell id -u)
+
 ipc-clean:
-	-ipcs -q | awk -v u="$$(id -un)" '$$3 == u {print $$2}' | xargs -r -n1 ipcrm -q
-	-ipcs -m | awk -v u="$$(id -un)" '$$3 == u {print $$2}' | xargs -r -n1 ipcrm -m
-	-ipcs -s | awk -v u="$$(id -un)" '$$3 == u {print $$2}' | xargs -r -n1 ipcrm -s
+	@awk -v u=$(UID_NUM) 'NR > 1 && $$8 == u {print $$2}' /proc/sysvipc/msg | xargs -r -n1 ipcrm -q
+	@awk -v u=$(UID_NUM) 'NR > 1 && $$8 == u {print $$2}' /proc/sysvipc/shm | xargs -r -n1 ipcrm -m
+	@awk -v u=$(UID_NUM) 'NR > 1 && $$5 == u {print $$2}' /proc/sysvipc/sem | xargs -r -n1 ipcrm -s
+	@echo "Struktury IPC użytkownika usunięte"
 
 test: all
 	@if [ -x tests/run_all.sh ]; then tests/run_all.sh; else echo "Testy nie są jeszcze gotowe"; fi

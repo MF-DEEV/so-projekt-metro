@@ -36,12 +36,14 @@ void params_usage(const char *prog)
             "  -R  miejsca na rowery, 0-P (domyślnie 4)\n"
             "  -N  liczba pociągów, 1-%d (domyślnie 3)\n"
             "  -T  czas postoju na stacji w sekundach, 1-%d (domyślnie 5)\n"
-            "  -A  czas kursu w kierunku A w sekundach, np. 4-8\n"
-            "  -B  czas kursu w kierunku B w sekundach, np. 6-12\n"
+            "  -A  czas kursu w kierunku A, min-max w sekundach z 1-%d (domyślnie 4-8)\n"
+            "  -B  czas kursu w kierunku B, min-max w sekundach z 1-%d (domyślnie 6-12)\n"
             "  -K  liczba stanowisk kasowych, 1-%d (domyślnie 2)\n"
             "  -M  łączna liczba pasażerów, 1-%d (domyślnie 300)\n"
-            "  -s  ziarno losowania (domyślnie czas systemowy)\n",
-            prog, MAX_CAPACITY, MAX_TRAINS, MAX_SECONDS, MAX_CASHIERS, MAX_PASSENGERS);
+            "  -s  ziarno losowania, 0-%d (domyślnie czas systemowy)\n"
+            "Bez -R przy P < 4 liczba miejsc na rowery jest równa P.\n",
+            prog, MAX_CAPACITY, MAX_TRAINS, MAX_SECONDS, MAX_SECONDS, MAX_SECONDS, MAX_CASHIERS,
+            MAX_PASSENGERS, INT_MAX);
 }
 
 /* Zamienia tekst na liczbę całkowitą z zakresu [min, max]; -1 przy błędzie */
@@ -50,14 +52,19 @@ static int parse_int(const char *text, const char *name, int min, int max, int *
     char *end;
     long value;
 
-    errno = 0;
-    value = strtol(text, &end, 10);
-    if (errno != 0 || end == text || *end != '\0') {
-        error_message(ERR_WARN, "%s: \"%s\" nie jest liczbą całkowitą", name, text);
+    /* tylko cyfry: strtol przepuściłby spacje i znak '+' */
+    if (!isdigit((unsigned char)text[0])) {
+        error_message(ERR_WARN, "%s: \"%s\" nie jest liczbą całkowitą nieujemną", name, text);
         return -1;
     }
-    if (value < min || value > max) {
-        error_message(ERR_WARN, "%s: wartość %ld spoza zakresu %d-%d", name, value, min, max);
+    errno = 0;
+    value = strtol(text, &end, 10);
+    if (*end != '\0') {
+        error_message(ERR_WARN, "%s: \"%s\" nie jest liczbą całkowitą nieujemną", name, text);
+        return -1;
+    }
+    if (errno == ERANGE || value < min || value > max) {
+        error_message(ERR_WARN, "%s: wartość \"%s\" spoza zakresu %d-%d", name, text, min, max);
         return -1;
     }
     *out = (int)value;
@@ -194,11 +201,11 @@ int params_parse(int argc, char *argv[], params_t *out)
         case 'M': rc = parse_int(optarg, "-M (pasażerowie)", 1, MAX_PASSENGERS, &out->passengers); break;
         case 's':
             rc = parse_int(optarg, "-s (ziarno)", 0, INT_MAX, &seed);
-            out->seed = (unsigned int)seed;
+            if (rc == 0) out->seed = (unsigned int)seed;
             break;
         case 'h':
             params_usage(argv[0]);
-            return -1;
+            return PARAMS_HELP;
         default:
             if (optopt != 0 && strchr("PRNTABKMs", optopt) != NULL)
                 error_message(ERR_WARN, "opcja -%c wymaga wartości", optopt);

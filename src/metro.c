@@ -9,6 +9,7 @@
 #include "log.h"
 #include "params.h"
 
+#include <errno.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -39,7 +40,8 @@ static void resolve_bin_dir(const char *argv0)
 
 /*
  * Uruchamia program roli jako proces potomny. args to tablica argumentów
- * zakończona NULL (bez nazwy programu). Zwraca PID dziecka.
+ * zakończona NULL (bez nazwy programu). Zwraca PID dziecka albo -1, gdy
+ * fork() się nie powiódł (błąd jest już zgłoszony).
  */
 static pid_t spawn(const char *program, char *const args[])
 {
@@ -53,8 +55,13 @@ static pid_t spawn(const char *program, char *const args[])
     for (int i = 0; args != NULL && args[i] != NULL && argc < 15; i++) argv[argc++] = args[i];
     argv[argc] = NULL;
 
-    pid = (pid_t)CHECK(fork(), "fork");
+    pid = fork();
+    if (pid == -1) {
+        error_report(ERR_WARN, "fork");
+        return -1;
+    }
     if (pid == 0) {
+        error_set_cleanup(NULL);   /* dziecko nie sprząta zasobów rodzica */
         execv(path, argv);
         error_report(ERR_WARN, path);   /* exec wraca tylko przy błędzie */
         _exit(EXIT_FAILURE);
@@ -70,7 +77,11 @@ int main(int argc, char *argv[])
     int failed = 0;
 
     error_set_role("metro");
-    if (params_parse(argc, argv, &params) == -1) return EXIT_FAILURE;
+    switch (params_parse(argc, argv, &params)) {
+    case 0: break;
+    case PARAMS_HELP: return EXIT_SUCCESS;
+    default: return EXIT_FAILURE;
+    }
 
     resolve_bin_dir(argv[0]);
     log_init(LOG_MAIN_FILE, "metro", COLOR_NONE);
@@ -80,20 +91,23 @@ int main(int argc, char *argv[])
             params.trip_a.max, params.trip_b.min, params.trip_b.max, params.cashiers,
             params.passengers, params.seed, params.passenger_slots);
 
-    spawn("zawiadowca", NULL);
-    children++;
-    for (int i = 0; i < params.cashiers; i++) {
+    /* Przy błędzie fork() nie uruchamiamy kolejnych ról, ale czekamy na już działające */
+    if (spawn("zawiadowca", NULL) > 0) children++;
+    else failed++;
+    for (int i = 0; i < params.cashiers && failed == 0; i++) {
         snprintf(id, sizeof(id), "%d", i + 1);
-        spawn("kasa", (char *const[]){id, NULL});
-        children++;
+        if (spawn("kasa", (char *const[]){id, NULL}) > 0) children++;
+        else failed++;
     }
-    for (int i = 0; i < params.trains; i++) {
+    for (int i = 0; i < params.trains && failed == 0; i++) {
         snprintf(id, sizeof(id), "%d", i + 1);
-        spawn("maszynista", (char *const[]){id, NULL});
-        children++;
+        if (spawn("maszynista", (char *const[]){id, NULL}) > 0) children++;
+        else failed++;
     }
-    spawn("generator", NULL);
-    children++;
+    if (failed == 0) {
+        if (spawn("generator", NULL) > 0) children++;
+        else failed++;
+    }
 
     /* Czekamy na wszystkie procesy potomne (blokująco, bez aktywnego czekania) */
     while (children > 0) {
@@ -101,13 +115,17 @@ int main(int argc, char *argv[])
         pid_t pid = wait(&status);
 
         if (pid == -1) {
+            if (errno == EINTR) continue;   /* przerwane przez sygnał - czekamy dalej */
             error_report(ERR_WARN, "wait");
             break;
         }
         children--;
-        if (!WIFEXITED(status) || WEXITSTATUS(status) != EXIT_SUCCESS) {
+        if (WIFSIGNALED(status)) {
             failed++;
-            log_msg("proces %d zakończył się błędem (status %d)", (int)pid, status);
+            log_msg("proces %d zakończony sygnałem %d", (int)pid, WTERMSIG(status));
+        } else if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS) {
+            failed++;
+            log_msg("proces %d zakończył się z kodem %d", (int)pid, WEXITSTATUS(status));
         }
     }
 
