@@ -2,7 +2,7 @@
 
 **Autor:** Dawid Buszta, nr albumu 158131
 **Przedmiot:** Systemy Operacyjne, 2026/2027, studia stacjonarne
-**Repozytorium:** https://github.com/DEV-industry/so-projekt-metro
+**Repozytorium:** https://github.com/MF-DEEV/so-projekt-metro
 
 ## Opis zadania
 
