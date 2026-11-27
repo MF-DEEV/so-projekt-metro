@@ -1,4 +1,4 @@
-# Metro — symulacja stacji metra
+# Metro - symulacja stacji metra
 
 Projekt z przedmiotu **Systemy Operacyjne** (2026/2027, studia stacjonarne), temat 11 „Metro”.
 Autor: Dawid Buszta, nr albumu 158131.

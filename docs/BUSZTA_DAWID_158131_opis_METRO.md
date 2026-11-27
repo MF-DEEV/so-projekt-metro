@@ -1,4 +1,4 @@
-# Temat 11 – Metro
+# Temat 11 - Metro
 
 **Autor:** Dawid Buszta, nr albumu 158131
 **Przedmiot:** Systemy Operacyjne, 2026/2027, studia stacjonarne
@@ -23,11 +23,11 @@ o pojemności P z R miejscami na rowery.
 
 Pasażerowie w różnym wieku przychodzą na stację w losowych momentach czasu. Przed wejściem na
 przystanek kupują bilet w kasie (K) na pociąg odjeżdżający w kierunku A lub B. Istnieje pewna
-liczba osób VIP (ok. 0.5% na każdy z kierunków) – posiadająca wcześniej wykupiony bilet, które nie
+liczba osób VIP (ok. 0.5% na każdy z kierunków) - posiadająca wcześniej wykupiony bilet, które nie
 płacą za bilet i mogą wejść do metra i do pociągu z pominięciem kolejki oczekujących. Dzieci
 w wieku poniżej 8 roku życia mogą wejść do pociągu tylko pod opieką osoby dorosłej (dziecko
 zajmuje osobne miejsce w pociągu). Kasa rejestruje wszystkie wchodzące osoby (ID procesu/wątku).
-Każdy pasażer przy wejściu do pociągu okazuje maszyniście ważny bilet – do pociągu nie może wejść
+Każdy pasażer przy wejściu do pociągu okazuje maszyniście ważny bilet - do pociągu nie może wejść
 osoba bez wykupionego wcześniej biletu.
 
 Pociągi przewożą pasażerów do miejsca docelowego (A lub B) i po czasie Ti (wartość losowa dla
@@ -36,7 +36,7 @@ w kierunku A zmienia kierunek i w momencie powrotu na stacje jedzie w kierunku B
 
 Na polecenie zawiadowcy (sygnał 1) pociąg, który w danym momencie stoi na stacji może odjechać
 z niepełną liczbą pasażerów. Po otrzymaniu od zawiadowcy polecenia (sygnał 2) pasażerowie nie
-mogą wsiąść do żadnego pociągu – nie mogą wejść na dworzec. Pociągi kończą pracę po rozwiezieniu
+mogą wsiąść do żadnego pociągu - nie mogą wejść na dworzec. Pociągi kończą pracę po rozwiezieniu
 wszystkich pasażerów.
 
 Napisz programy symulujące działanie zawiadowcy, kasy, maszynisty i pasażerów. Raport z przebiegu
@@ -53,8 +53,8 @@ symulacji (logi) zapisać w pliku (plikach) tekstowym.
 3. **Sygnał 1** to `SIGUSR1`, **sygnał 2** to `SIGUSR2`, oba wysyłane do procesu zawiadowcy
    (np. `kill -USR1 <pid>`). Zawiadowca przekazuje polecenie maszyniście pociągu stojącego na
    stacji albo zamyka dworzec.
-4. **Kierunek.** Na początku pociągom przydzielane są kierunki naprzemiennie (pociąg 1 – A,
-   pociąg 2 – B, …). Każdy pociąg po powrocie na stację zmienia kierunek na przeciwny.
+4. **Kierunek.** Na początku pociągom przydzielane są kierunki naprzemiennie (pociąg 1 - A,
+   pociąg 2 - B, …). Każdy pociąg po powrocie na stację zmienia kierunek na przeciwny.
    Pociągi wjeżdżają na peron w kolejności powrotu. Zawiadowca ogłasza kierunek tuż przed
    wjazdem pociągu na peron, a do wejść podchodzą tylko pasażerowie z biletem na ten kierunek;
    pozostali czekają na dworcu.
@@ -84,14 +84,14 @@ symulacji (logi) zapisać w pliku (plikach) tekstowym.
 
 | Parametr | Znaczenie | Zakres |
 |---|---|---|
-| P | pojemność pociągu | 1–1000 |
-| R | miejsca na rowery | 0–P |
-| N | liczba pociągów | 1–10 |
-| T | czas postoju na stacji (s) | 1–3600 |
-| Ti A, Ti B | zakres czasu kursu dla kierunku A i B (s) | 1–3600, min ≤ max |
-| K | liczba stanowisk kasowych | 1–10 |
-| M | łączna liczba pasażerów | 1–100000 |
-| s | ziarno generatora liczb losowych | 0–2147483647 |
+| P | pojemność pociągu | 1-1000 |
+| R | miejsca na rowery | 0-P |
+| N | liczba pociągów | 1-10 |
+| T | czas postoju na stacji (s) | 1-3600 |
+| Ti A, Ti B | zakres czasu kursu dla kierunku A i B (s) | 1-3600, min ≤ max |
+| K | liczba stanowisk kasowych | 1-10 |
+| M | łączna liczba pasażerów | 1-100000 |
+| s | ziarno generatora liczb losowych | 0-2147483647 |
 
 Gdy R nie zostanie podane, a P < 4, liczba miejsc na rowery jest równa P.
 Niepoprawne wartości powodują wyświetlenie komunikatu i zakończenie programu przed utworzeniem
@@ -102,7 +102,7 @@ jakichkolwiek procesów i struktur IPC.
 Każdy test sprawdzany jest na podstawie logów symulacji (skrypty w katalogu `tests/`) oraz
 stanu systemu po zakończeniu (`ps`, `ipcs`).
 
-### Test 1 – Limity pojemności P i R
+### Test 1 - Limity pojemności P i R
 
 - **Cel:** sprawdzenie, czy synchronizacja wejść nie dopuszcza do przekroczenia pojemności.
 - **Parametry:** P = 10, R = 2, N = 2, T = 2, M = 2000, duży udział pasażerów z rowerami.
@@ -111,7 +111,7 @@ stanu systemu po zakończeniu (`ps`, `ipcs`).
   ani więcej niż 2 rowerów; w chwili odjazdu żadne wejście nie jest zajęte; wszyscy
   pasażerowie zostali przewiezieni.
 
-### Test 2 – Sygnał 1: odjazd niepełnego pociągu
+### Test 2 - Sygnał 1: odjazd niepełnego pociągu
 
 - **Cel:** sprawdzenie obsługi sygnału i braku blokady po wymuszonym odjeździe.
 - **Parametry:** P = 50, T = 60, M = 30.
@@ -119,7 +119,7 @@ stanu systemu po zakończeniu (`ps`, `ipcs`).
 - **Oczekiwany wynik:** pociąg odjeżdża od razu z niepełną liczbą pasażerów, na peron wjeżdża
   kolejny dostępny pociąg, symulacja kończy się poprawnie.
 
-### Test 3 – Sygnał 2: zamknięcie dworca
+### Test 3 - Sygnał 2: zamknięcie dworca
 
 - **Cel:** sprawdzenie, czy zamknięcie dworca nie powoduje zakleszczenia ani osieroconych zasobów.
 - **Parametry:** M = 2000, sygnał wysłany w trakcie symulacji.
@@ -129,7 +129,7 @@ stanu systemu po zakończeniu (`ps`, `ipcs`).
   wszystkie procesy kończą się, `ipcs` nie pokazuje struktur użytkownika, `ps` nie pokazuje
   procesów zombie.
 
-### Test 4 – Dziecko pod opieką dorosłego
+### Test 4 - Dziecko pod opieką dorosłego
 
 - **Cel:** sprawdzenie, czy dziecko i opiekun wsiadają razem (synchronizacja wątku z procesem).
 - **Parametry:** P = 3, duży udział dorosłych z dziećmi.
@@ -137,7 +137,7 @@ stanu systemu po zakończeniu (`ps`, `ipcs`).
 - **Oczekiwany wynik:** dziecko nigdy nie wsiada bez opiekuna; gdy w pociągu jest tylko jedno
   wolne miejsce, para czeka na kolejny pociąg; liczba miejsc zajętych przez parę wynosi 2.
 
-### Test 5 – Pierwszeństwo VIP
+### Test 5 - Pierwszeństwo VIP
 
 - **Cel:** sprawdzenie, czy VIP pomija kolejkę oczekujących.
 - **Parametry:** P = 5, M = 1000, zwiększony udział VIP-ów (opcja testowa).
@@ -145,7 +145,7 @@ stanu systemu po zakończeniu (`ps`, `ipcs`).
 - **Oczekiwany wynik:** VIP nie kupuje biletu w kasie i wsiada przed pasażerami, którzy
   czekali wcześniej na ten sam pociąg.
 
-### Test 6 – Obciążenie i limit procesów
+### Test 6 - Obciążenie i limit procesów
 
 - **Cel:** sprawdzenie, czy generator przy dużym napływie pasażerów nie przekracza limitu
   procesów użytkownika i poprawnie odbiera zakończone procesy.
